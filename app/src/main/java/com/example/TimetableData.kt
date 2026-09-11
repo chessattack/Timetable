@@ -25,6 +25,12 @@ data class ArrangementSheetData(
     val rows: List<ArrangementRow>
 )
 
+data class NotificationItem(
+    val targetClass: String,
+    val message: String,
+    val timestamp: Long
+)
+
 object TimetableData {
     val db = FirebaseFirestore.getInstance()
     
@@ -177,6 +183,8 @@ object TimetableData {
     val absentTeachersYesterday = androidx.compose.runtime.mutableStateListOf<String>("Usha", "Sandeep")
     val absentTeachersDayBefore = androidx.compose.runtime.mutableStateListOf<String>("Mahima Tiwari")
     
+    val classNotifications = androidx.compose.runtime.mutableStateListOf<NotificationItem>()
+    
     var timetableUpdateTrigger = androidx.compose.runtime.mutableStateOf(0)
 
     init {
@@ -293,8 +301,22 @@ object TimetableData {
                     if (sub != null) {
                         periodAssignments[pIndex] = "$sub ($targetClass)"
                         newlyAssignedBusy[pIndex]!!.add(sub)
+                        classNotifications.add(
+                            NotificationItem(
+                                targetClass = targetClass,
+                                message = "Instead of $absentTeacher, $sub is coming in the ${pIndex + 1} period.",
+                                timestamp = System.currentTimeMillis()
+                            )
+                        )
                     } else {
                         periodAssignments[pIndex] = "sports2 ($targetClass)"
+                        classNotifications.add(
+                            NotificationItem(
+                                targetClass = targetClass,
+                                message = "Instead of $absentTeacher, sports2 is coming in the ${pIndex + 1} period.",
+                                timestamp = System.currentTimeMillis()
+                            )
+                        )
                     }
                 }
             }
@@ -363,14 +385,30 @@ object TimetableData {
                         }
 
                         if (sub != null) {
+                            val originalTeacher = period.subtitle
                             period.title = "${period.title} (Sub)"
                             period.subtitle = sub
                             freeTeachers.remove(sub) // mark as busy now
                             busyTeachers.add(sub)
+                            classNotifications.add(
+                                NotificationItem(
+                                    targetClass = c,
+                                    message = "Instead of $originalTeacher, $sub is coming in the ${pIndex + 1} period.",
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
                         } else {
+                            val originalTeacher = period.subtitle
                             // Priority 3: Games period (sports2 can handle multiple)
                             period.title = "GAMES (Arrangement)"
                             period.subtitle = "sports2"
+                            classNotifications.add(
+                                NotificationItem(
+                                    targetClass = c,
+                                    message = "Instead of $originalTeacher, sports2 is coming in the ${pIndex + 1} period.",
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
                         }
                     }
                 }

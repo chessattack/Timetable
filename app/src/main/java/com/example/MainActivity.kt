@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -79,87 +80,98 @@ class MainActivity : ComponentActivity() {
 
 sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: String) {
     object Timetable : BottomNavItem("Timetable", Icons.Filled.DateRange, "classes")
+    object Notifications : BottomNavItem("Notifications", Icons.Filled.Notifications, "notifications")
     object Profile : BottomNavItem("Profile", Icons.Filled.Person, "profile")
 }
 
 @Composable
 fun TimetableApp() {
-    val context = androidx.compose.ui.platform.LocalContext.current
     var isAuthenticated by remember { mutableStateOf(false) }
+
+    if (!isAuthenticated) {
+        PasswordScreen(onAuthenticated = { isAuthenticated = true })
+    } else {
+        AuthenticatedApp()
+    }
+}
+
+@Composable
+fun PasswordScreen(onAuthenticated: () -> Unit) {
     var passwordInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
-    if (!isAuthenticated) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFFAF9F2)),
-            contentAlignment = Alignment.Center
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF9F2)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "School Timetable App",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF172047),
-                    textAlign = TextAlign.Center
-                )
+            Text(
+                text = "School Timetable App",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF172047),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Please enter password to unlock",
+                fontSize = 16.sp,
+                color = Color(0xFF64748B),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            OutlinedTextField(
+                value = passwordInput,
+                onValueChange = { 
+                    passwordInput = it
+                    errorMessage = ""
+                },
+                label = { Text("Password") },
+                placeholder = { Text("Enter password") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+            if (errorMessage.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Please enter password to unlock",
-                    fontSize = 16.sp,
-                    color = Color(0xFF64748B),
-                    textAlign = TextAlign.Center
+                    text = errorMessage,
+                    color = Color(0xFFE84356),
+                    fontSize = 14.sp
                 )
-                Spacer(modifier = Modifier.height(32.dp))
-                OutlinedTextField(
-                    value = passwordInput,
-                    onValueChange = { 
-                        passwordInput = it
-                        errorMessage = ""
-                    },
-                    label = { Text("Password") },
-                    placeholder = { Text("Enter 123") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
-                if (errorMessage.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = Color(0xFFE84356),
-                        fontSize = 14.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        if (passwordInput.trim() == "123") {
-                            isAuthenticated = true
-                        } else {
-                            errorMessage = "Incorrect password. (Hint: 123)"
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF263E75))
-                ) {
-                    Text("Unlock App", fontSize = 18.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    if (passwordInput.trim() == "123") {
+                        onAuthenticated()
+                    } else {
+                        errorMessage = "Incorrect password."
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF263E75))
+            ) {
+                Text("Unlock App", fontSize = 18.sp, color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
-        return
     }
+}
 
+@Composable
+fun AuthenticatedApp() {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember { context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE) }
     
     // Check for banned user
@@ -167,37 +179,45 @@ fun TimetableApp() {
     val isBanned = TimetableData.bannedUsers.contains(accountName)
     
     if (isBanned) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(24.dp)
-            ) {
-                // We show a placeholder developer icon here, or load the URI if available
-                // We'll just use a generic developer shield/person for now if no URI
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = "Developer",
-                    modifier = Modifier.size(100.dp),
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "your account has been banned by the app developer\nno timetable no switching account\nwant to use teb app re install and create a new account",
-                    color = Color.Red,
-                    fontSize = 20.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        return
+        BannedScreen()
+    } else {
+        MainAppContent()
     }
+}
 
+@Composable
+fun BannedScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = "Developer",
+                modifier = Modifier.size(100.dp),
+                tint = Color.White
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "your account has been banned by the app developer\nno timetable no switching account\nwant to use teb app re install and create a new account",
+                color = Color.Red,
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun MainAppContent() {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean -> }
@@ -210,20 +230,45 @@ fun TimetableApp() {
         }
     }
 
+    val prefs = remember { context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE) }
+    val profileRole = prefs.getString("role", null)
+    val profileDetail = prefs.getString("detail", null)
+
     LaunchedEffect(TimetableData.timetableUpdateTrigger.value) {
         if (TimetableData.timetableUpdateTrigger.value > 0) {
-            android.widget.Toast.makeText(context, "Timetable updated. Please check your timetable.", android.widget.Toast.LENGTH_LONG).show()
+            var notificationTitle = "Timetable Updated"
+            var notificationText = "A new timetable has been generated."
+            var shouldNotify = false
             
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                val builder = NotificationCompat.Builder(context, "timetable_channel")
-                    .setSmallIcon(android.R.drawable.ic_dialog_info)
-                    .setContentTitle("Timetable Updated")
-                    .setContentText("A new timetable has been generated. Check your classes.")
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setAutoCancel(true)
+            if (profileRole == "Student" && profileDetail != null) {
+                val userClass = profileDetail.removePrefix("Class: ").trim()
+                val classNotifs = TimetableData.classNotifications.filter { it.targetClass == userClass }
+                if (classNotifs.isNotEmpty()) {
+                    val latest = classNotifs.maxByOrNull { it.timestamp }
+                    if (latest != null) {
+                        notificationTitle = "Class $userClass Timetable Update"
+                        notificationText = latest.message
+                        shouldNotify = true
+                    }
+                }
+            } else if (profileRole == "Admin" || profileRole == "Developer") {
+                // Admins/Developers can see generic notification
+                shouldNotify = true
+            }
 
-                with(NotificationManagerCompat.from(context)) {
-                    notify(101, builder.build())
+            if (shouldNotify) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    val builder = NotificationCompat.Builder(context, "timetable_channel")
+                        .setSmallIcon(android.R.drawable.ic_dialog_info)
+                        .setContentTitle(notificationTitle)
+                        .setContentText(notificationText)
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(notificationText))
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setAutoCancel(true)
+
+                    with(NotificationManagerCompat.from(context)) {
+                        notify(101, builder.build())
+                    }
                 }
             }
         }
@@ -232,6 +277,7 @@ fun TimetableApp() {
     val navController = rememberNavController()
     val items = listOf(
         BottomNavItem.Timetable,
+        BottomNavItem.Notifications,
         BottomNavItem.Profile
     )
 
@@ -285,6 +331,9 @@ fun TimetableApp() {
                         navController.navigate("timetable/$className")
                     }
                 )
+            }
+            composable(BottomNavItem.Notifications.route) {
+                NotificationScreen()
             }
             composable(BottomNavItem.Profile.route) {
                 ProfileScreen()
