@@ -1,0 +1,56 @@
+--- app/src/main/java/com/example/ProfileScreen.kt
++++ app/src/main/java/com/example/ProfileScreen.kt
+@@ -42,6 +42,7 @@
+ import androidx.compose.ui.graphics.vector.ImageVector
+ import androidx.compose.material.icons.outlined.AccountCircle
++import android.content.Intent
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+ @Composable
+@@ -728,6 +729,7 @@
+ 
+ @Composable
+ fun ArrangementSheetView(sheetData: ArrangementSheetData) {
++    val context = LocalContext.current
+     Column(
+         modifier = Modifier
+             .fillMaxWidth()
+@@ -798,4 +800,34 @@
+             Text("PRINCIPAL", fontWeight = FontWeight.Bold)
+         }
++        
++        Spacer(modifier = Modifier.height(16.dp))
++        
++        Button(
++            onClick = {
++                val sb = StringBuilder()
++                sb.append("TIME TABLE (2026-27)\nARRANGEMENT SHEET\n")
++                sb.append("Date: ${sheetData.dateString}\n\n")
++                
++                sheetData.rows.forEach { row ->
++                    sb.append("${row.slNo}. Absent Teacher: ${row.absentTeacherName}\n")
++                    for (i in 0..7) {
++                        val assignment = row.periodAssignments[i]
++                        if (!assignment.isNullOrEmpty()) {
++                            sb.append("   Period ${i + 1}: $assignment\n")
++                        }
++                    }
++                    sb.append("\n")
++                }
++                sb.append("Table Incharge: Timetable App\n")
++                
++                val sendIntent: Intent = Intent().apply {
++                    action = Intent.ACTION_SEND
++                    putExtra(Intent.EXTRA_TEXT, sb.toString())
++                    type = "text/plain"
++                }
++                val shareIntent = Intent.createChooser(sendIntent, "Share Arrangement Sheet")
++                context.startActivity(shareIntent)
++            },
++            modifier = Modifier.align(Alignment.End),
++            colors = ButtonDefaults.buttonColors(containerColor = PrimaryNavy)
++        ) {
++            Text("Share as Text")
++        }
+     }
+ }

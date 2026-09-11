@@ -1,0 +1,54 @@
+--- app/src/main/java/com/example/ProfileScreen.kt
++++ app/src/main/java/com/example/ProfileScreen.kt
+@@ -528,14 +528,24 @@
+                         ) {
+                             Text("Apply", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                         }
+-                    } else if (profileRole == "Admin") {
+-                        val idStr = profileDetail?.removePrefix("ID: ")?.trim() ?: ""
+-                        Text(
+-                            text = idStr,
+-                            fontSize = 28.sp,
+-                            fontWeight = FontWeight.Bold,
+-                            color = TextNavy
+-                        )
++                    } else if (profileRole == "Admin" || profileRole == "Developer") {
++                        if (profileRole == "Developer") {
++                            Text(
++                                text = "Developer Dashboard",
++                                fontSize = 28.sp,
++                                fontWeight = FontWeight.Bold,
++                                color = TextNavy
++                            )
++                        } else {
++                            val idStr = profileDetail?.removePrefix("ID: ")?.trim() ?: ""
++                            Text(
++                                text = idStr,
++                                fontSize = 28.sp,
++                                fontWeight = FontWeight.Bold,
++                                color = TextNavy
++                            )
++                        }
+                         
+                         Spacer(modifier = Modifier.height(32.dp))
+                         
+@@ -627,14 +637,10 @@
+                         if (arrangementSheet != null) {
+                             ArrangementSheetView(arrangementSheet!!)
+                         }
+-                    } else if (profileRole == "Developer") {
+-                        Text(
+-                            text = "Developer Dashboard",
+-                            fontSize = 28.sp,
+-                            fontWeight = FontWeight.Bold,
+-                            color = TextNavy
+-                        )
+-                        Spacer(modifier = Modifier.height(24.dp))
+-                        DeveloperDashboard()
++                        
++                        if (profileRole == "Developer") {
++                            Spacer(modifier = Modifier.height(24.dp))
++                            DeveloperDashboard()
++                        }
+                     }
+                     

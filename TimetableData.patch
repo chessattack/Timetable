@@ -1,0 +1,85 @@
+--- app/src/main/java/com/example/TimetableData.kt
++++ app/src/main/java/com/example/TimetableData.kt
+@@ -231,6 +231,73 @@
+         editedSchedules[className] = newSchedule
+     }
+ 
++    fun generateArrangementSheetData(): ArrangementSheetData {
++        val calendar = java.util.Calendar.getInstance()
++        calendar.add(java.util.Calendar.DAY_OF_YEAR, 1) // Tomorrow
++        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.ENGLISH)
++        val dateString = sdf.format(calendar.time)
++        val dayFormat = java.text.SimpleDateFormat("EEEE", java.util.Locale.ENGLISH)
++        val dayName = dayFormat.format(calendar.time)
++
++        // Pre-compute subject teachers per class across the week
++        val classSubjectTeachers = mutableMapOf<String, MutableSet<String>>()
++        for (c in classes) {
++            val teachers = mutableSetOf<String>()
++            getScheduleForClass(c).forEach { daySch ->
++                daySch.periods.forEach { p ->
++                    if (p.subtitle.isNotBlank() && p.subtitle != "sports2" && p.subtitle != "GAMES") {
++                        teachers.add(p.subtitle)
++                    }
++                }
++            }
++            classSubjectTeachers[c] = teachers
++        }
++
++        val newlyAssignedBusy = mutableMapOf<Int, MutableSet<String>>()
++        for (i in 0 until 8) newlyAssignedBusy[i] = mutableSetOf<String>()
++
++        val rows = mutableListOf<ArrangementRow>()
++        var slNo = 1
++        
++        for (absentTeacher in absentTeachers) {
++            val periodAssignments = mutableMapOf<Int, String>()
++            
++            for (pIndex in 0 until 8) {
++                var targetClass: String? = null
++                for (c in classes) {
++                    val period = getScheduleForClass(c).find { it.dayName == dayName }?.periods?.getOrNull(pIndex)
++                    if (period != null && period.subtitle == absentTeacher) {
++                        targetClass = c
++                        break
++                    }
++                }
++                
++                if (targetClass != null) {
++                    val busyTeachers = mutableSetOf<String>()
++                    for (c in classes) {
++                        val p = getScheduleForClass(c).find { it.dayName == dayName }?.periods?.getOrNull(pIndex)
++                        if (p != null && p.subtitle.isNotBlank() && p.subtitle !in absentTeachers) {
++                            busyTeachers.add(p.subtitle)
++                        }
++                    }
++                    busyTeachers.addAll(newlyAssignedBusy[pIndex]!!)
++                    
++                    val freeTeachers = allPreRegisteredTeachers.filter { 
++                        it !in busyTeachers && it !in absentTeachers 
++                    }.toMutableList()
++                    
++                    val cTeachers = classSubjectTeachers[targetClass] ?: emptySet()
++                    
++                    var sub = freeTeachers.firstOrNull { it in cTeachers && it != "sports2" && it != "Games" }
++                    if (sub == null) {
++                        sub = freeTeachers.firstOrNull { it != "sports2" && it != "Games" }
++                    }
++                    
++                    if (sub != null) {
++                        periodAssignments[pIndex] = "$sub ($targetClass)"
++                        newlyAssignedBusy[pIndex]!!.add(sub)
++                    } else {
++                        periodAssignments[pIndex] = "sports2 ($targetClass)"
++                    }
++                }
++            }
++            rows.add(ArrangementRow(slNo++, absentTeacher, periodAssignments))
++        }
++        
++        return ArrangementSheetData(dateString, rows)
++    }
++
+     fun autoGenerateArrangements() {
+         val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+         

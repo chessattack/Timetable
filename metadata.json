@@ -1,0 +1,6 @@
+{
+  "name": "School Timetable",
+  "description": "A school timetable app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

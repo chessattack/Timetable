@@ -1,0 +1,18 @@
+--- app/src/main/java/com/example/TimetableData.kt
++++ app/src/main/java/com/example/TimetableData.kt
+@@ -19,6 +19,17 @@
+ )
+ 
++data class ArrangementRow(
++    val slNo: Int,
++    val absentTeacherName: String,
++    val periodAssignments: Map<Int, String> // Map of period index (0..7) to "SubName (ClassName)"
++)
++
++data class ArrangementSheetData(
++    val dateString: String,
++    val rows: List<ArrangementRow>
++)
++
+ object TimetableData {
+     val db = FirebaseFirestore.getInstance()
